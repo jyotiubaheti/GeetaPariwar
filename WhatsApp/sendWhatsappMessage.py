@@ -14,6 +14,29 @@ import win32con
 from io import BytesIO
 from PIL import Image
 
+def getAlternateNames(df,nameCol,phoneCol):
+    Names = df[nameCol].tolist()
+    alternateNames = []
+    for i,name in enumerate(Names):
+        newSet = set(df[nameCol][df[phoneCol]==df[phoneCol].iloc[i]].to_list())
+        alternateNames.append(list(newSet))
+    df['Alternate Names'] = alternateNames
+    return df
+
+def findName(name,driver,Search):
+    found= False
+    Search.send_keys(name)
+    time.sleep(1)
+    try:
+        element = driver.find_element_by_xpath("//span[@title='" + name + "']")
+        element.click() 
+        found = True
+    except:
+        Search.clear()
+        # print ("Not Found:",name)
+        found = False
+    return found
+
 def copyImageToClipBoard(image):
     image = Image.open(image)
     output = BytesIO()
@@ -31,14 +54,22 @@ def copyTextToClipBoard(text):
     clip.SetClipboardText(text)
     clip.CloseClipboard()
 
-def sendMessage(number,body="",attach_jpg=None,bodyImage=""):
-    # number = "8310258040"
+def sendMessage(phoneNo=None,names=[],driver=None,body="",attach_jpg=None,bodyImage=""):
+    # names = ["Nikhil JioB","Nikhil Jio"]
     Search = wait.until(EC.element_to_be_clickable((By.XPATH,"//div[@class='_2_1wd copyable-text selectable-text']")))
     time.sleep(2)
-    Search.send_keys(number)
-    time.sleep(2)
-    pyautogui.press("down")
-    time.sleep(2)
+
+    isFound = False
+    for name in names:
+        time.sleep(1)
+        isFound = findName(name,driver,Search)
+        if isFound: break
+
+    if not isFound: 
+        print ("Not Found Names",names)
+        return
+    time.sleep(3)
+
     Message = driver.find_elements_by_xpath('//*[@id="main"]/footer/div[1]/div[2]/div/div[2]')[0]
     time.sleep(1)
 
@@ -98,15 +129,17 @@ rollCol = df.columns[rollNumberColIndex]
 phoneCol = df.columns[phoneColIndex]
 nameCol = df.columns[nameColIndex]
 
+df = getAlternateNames(df,rollCol,phoneCol)
 for i in range(df[df.columns[0]].count()):
     bodyMessage = messageText
     if isRollNumber: 
         bodyMessage = bodyMessage.replace("<>","*" + df[rollCol].iloc[i] + "*")
         bodyMessage = bodyMessage.replace("<N>","*" + df[nameCol].iloc[i] + "*")
-    phoneNo = str(df[phoneCol].iloc[i])
-    if phoneNo:
-        sendMessage(phoneNo,body=bodyMessage,attach_jpg=photoName,bodyImage=imageText)
-        print ("Done:",phoneNo,i)
+    names = df['Alternate Names'].iloc[i]
+
+    if names:
+        sendMessage(names,driver,body=bodyMessage,attach_jpg=photoName,bodyImage=imageText)
+        print ("Done:",names,i)
     else:
-        print ("Error: phoneNo not found",phoneNo)
+        print ("Error: names is empty")
 
