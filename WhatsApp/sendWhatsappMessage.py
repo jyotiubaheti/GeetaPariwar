@@ -54,7 +54,7 @@ def copyTextToClipBoard(text):
     clip.SetClipboardText(text)
     clip.CloseClipboard()
 
-def sendMessage(phoneNo=None,names=[],driver=None,body="",attach_jpg=None,bodyImage=""):
+def sendMessage(names=[],driver=None,body="",attach_jpg=None,bodyImage=""):
     # names = ["Nikhil JioB","Nikhil Jio"]
     Search = wait.until(EC.element_to_be_clickable((By.XPATH,"//div[@class='_2_1wd copyable-text selectable-text']")))
     time.sleep(2)
